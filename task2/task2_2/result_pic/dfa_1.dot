@@ -1,0 +1,10 @@
+digraph {
+    0 [ label = "0" ]
+    1 [ label = "1" ]
+    2 [ label = "2" ]
+    3 [ label = "3" ]
+    0 -> 2 [ label = "w" ]
+    1 -> 1 [ label = "c" ]
+    2 -> 3 [ label = "o" ]
+    3 -> 1 [ label = "c" ]
+}

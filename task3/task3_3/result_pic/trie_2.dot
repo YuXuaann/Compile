@@ -1,0 +1,5 @@
+digraph {
+    0 [ label = "root: 1" ]
+    1 [ label = "b: 1" ]
+    0 -> 1 [ label = "b" ]
+}
