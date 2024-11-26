@@ -1,0 +1,13 @@
+digraph {
+    0 [ label = "ConstDecl: 1" ]
+    1 [ label = "const: 1" ]
+    2 [ label = "constBType: 1" ]
+    3 [ label = "constBTypeConstDef: 1" ]
+    4 [ label = "constBTypeConstDefConstDecl': 1" ]
+    5 [ label = "constBTypeConstDefConstDecl';: 1" ]
+    0 -> 1 [ label = "const" ]
+    1 -> 2 [ label = "BType" ]
+    2 -> 3 [ label = "ConstDef" ]
+    3 -> 4 [ label = "ConstDecl'" ]
+    4 -> 5 [ label = ";" ]
+}

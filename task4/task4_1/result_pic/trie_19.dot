@@ -1,0 +1,7 @@
+digraph {
+    0 [ label = "LVal: 1" ]
+    1 [ label = "Ident: 1" ]
+    2 [ label = "IdentLVal': 1" ]
+    0 -> 1 [ label = "Ident" ]
+    1 -> 2 [ label = "LVal'" ]
+}

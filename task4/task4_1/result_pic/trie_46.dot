@@ -1,0 +1,9 @@
+digraph {
+    0 [ label = "InitVal': 2" ]
+    1 [ label = ": 1" ]
+    2 [ label = "InitVal: 1" ]
+    3 [ label = "InitValInitVal'': 1" ]
+    0 -> 1 [ label = "" ]
+    0 -> 2 [ label = "InitVal" ]
+    2 -> 3 [ label = "InitVal''" ]
+}

@@ -1,0 +1,11 @@
+digraph {
+    0 [ label = "MulExp: 2" ]
+    1 [ label = "UnaryExp: 1" ]
+    2 [ label = "MulExp: 1" ]
+    3 [ label = "MulExpMulOp: 1" ]
+    4 [ label = "MulExpMulOpUnaryExp: 1" ]
+    0 -> 1 [ label = "UnaryExp" ]
+    0 -> 2 [ label = "MulExp" ]
+    2 -> 3 [ label = "MulOp" ]
+    3 -> 4 [ label = "UnaryExp" ]
+}

@@ -1,0 +1,7 @@
+digraph {
+    0 [ label = "BType: 2" ]
+    1 [ label = "float: 1" ]
+    2 [ label = "int: 1" ]
+    0 -> 1 [ label = "float" ]
+    0 -> 2 [ label = "int" ]
+}

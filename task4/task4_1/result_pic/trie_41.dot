@@ -1,0 +1,9 @@
+digraph {
+    0 [ label = "VarDef: 1" ]
+    1 [ label = "Ident: 1" ]
+    2 [ label = "IdentVarDef': 1" ]
+    3 [ label = "IdentVarDef'VarDef'': 1" ]
+    0 -> 1 [ label = "Ident" ]
+    1 -> 2 [ label = "VarDef'" ]
+    2 -> 3 [ label = "VarDef''" ]
+}
