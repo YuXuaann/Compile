@@ -1,7 +1,0 @@
-digraph {
-    0 [ label = "BlockItem: 2" ]
-    1 [ label = "Stmt: 1" ]
-    2 [ label = "Decl: 1" ]
-    0 -> 1 [ label = "Stmt" ]
-    0 -> 2 [ label = "Decl" ]
-}

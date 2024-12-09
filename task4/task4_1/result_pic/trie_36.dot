@@ -1,7 +1,0 @@
-digraph {
-    0 [ label = "Decl: 2" ]
-    1 [ label = "ConstDecl: 1" ]
-    2 [ label = "VarDecl: 1" ]
-    0 -> 1 [ label = "ConstDecl" ]
-    0 -> 2 [ label = "VarDecl" ]
-}

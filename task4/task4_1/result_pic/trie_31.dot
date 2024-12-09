@@ -1,9 +1,0 @@
-digraph {
-    0 [ label = "FuncFParam: 1" ]
-    1 [ label = "BType: 1" ]
-    2 [ label = "BTypeIdent: 1" ]
-    3 [ label = "BTypeIdentFuncFParam': 1" ]
-    0 -> 1 [ label = "BType" ]
-    1 -> 2 [ label = "Ident" ]
-    2 -> 3 [ label = "FuncFParam'" ]
-}

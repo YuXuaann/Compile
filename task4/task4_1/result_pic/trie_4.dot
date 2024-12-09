@@ -1,5 +1,0 @@
-digraph {
-    0 [ label = "ConstExp: 1" ]
-    1 [ label = "AddExp: 1" ]
-    0 -> 1 [ label = "AddExp" ]
-}

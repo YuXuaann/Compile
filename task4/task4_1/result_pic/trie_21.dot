@@ -1,7 +1,0 @@
-digraph {
-    0 [ label = "EqOp: 2" ]
-    1 [ label = "==: 1" ]
-    2 [ label = "!=: 1" ]
-    0 -> 1 [ label = "==" ]
-    0 -> 2 [ label = "!=" ]
-}

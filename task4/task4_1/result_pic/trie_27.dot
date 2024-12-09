@@ -1,7 +1,0 @@
-digraph {
-    0 [ label = "Number: 2" ]
-    1 [ label = "FloatConst: 1" ]
-    2 [ label = "IntConst: 1" ]
-    0 -> 1 [ label = "FloatConst" ]
-    0 -> 2 [ label = "IntConst" ]
-}
