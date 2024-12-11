@@ -16,6 +16,8 @@ pub enum TokenType {
     //Keywords
     /// "int"
     Int,
+    /// "float"
+    Float,
     /// "void"
     Void,
     /// "const"
@@ -91,6 +93,7 @@ pub enum TokenType {
 fn keyword_map() -> HashMap<String, TokenType> {
     let mut map = HashMap::new();
     map.insert("int".into(), TokenType::Int);
+    map.insert("float".into(), TokenType::Float);
     map.insert("void".into(), TokenType::Void);
     map.insert("const".into(), TokenType::Const);
     map.insert("if".into(), TokenType::If);
@@ -165,6 +168,46 @@ impl Token {
             end: 0,
             lineno,
         }
+    }
+
+    pub fn wrong_token(&self, expect: String) {
+        let lstart = *self.lstart;
+        let errline: String = self.buf[*self.lstart..self.end].iter().collect();
+
+        //Error message
+        println!(
+            "{}: {}",
+            "parser error".red().bold(),
+            "Unexpected token".bold()
+        );
+        println!(
+            "  {}:{}:{}",
+            "-->".blue().bold(),
+            self.lineno,
+            self.start - lstart + 1
+        );
+        println!("   {}", "|".blue().bold());
+        println!(
+            "{:3}{} {}",
+            self.lineno.to_string().blue().bold(),
+            "|".blue().bold(),
+            errline
+        );
+
+        //Suggestion message
+        print!("   {}", "|".blue().bold());
+        for _ in 0..self.start - lstart + 1 {
+            print!("{}", ' ');
+        }
+        println!(
+            "{} {}{}",
+            "^".red().bold(),
+            "Expect ".red().bold(),
+            expect.red().bold()
+        );
+
+        println!("   {}", "|".blue().bold());
+        println!("Unexpected token");
     }
 }
 

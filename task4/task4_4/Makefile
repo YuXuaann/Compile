@@ -1,4 +1,4 @@
-TASK_ID = 3
+TASK_ID = 4
 
 ss: build
 	@if [ ! -d "result_pic" ]; then mkdir result_pic; fi

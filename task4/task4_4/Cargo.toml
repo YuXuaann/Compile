@@ -1,9 +1,7 @@
 [package]
-name = "task4_3"
+name = "task4_4"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 colored = "2.0"
-log = "0.4"
-lazy_static = "1.4.0"

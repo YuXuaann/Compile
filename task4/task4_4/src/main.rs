@@ -2,8 +2,8 @@
 // use std::io::Write;
 
 mod lexer;
+mod semantic;
 mod syntax;
-mod token;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -12,18 +12,20 @@ fn main() {
         std::process::exit(1);
     }
 
-    let tokens = lexer::tokenize(&args[1].clone());
+    let tokens = lexer::tokenize(args[1].clone());
     tokens.iter().for_each(|x| {
         println!("{:?}", x);
     });
 
     println!();
 
-    let ast = syntax::parse(tokens, &args[1].clone());
+    let ast = syntax::parse(tokens);
     // ast.iter().for_each(|x| {
     //     println!("{:?}", x);
     // });
-    ast[0].show(0);
+
+    //Semantic Analysis
+    let optim_ast = semantic::semantic(&ast, &args[1].clone());
 
     // let dot_string = ast[0].to_dot();
     // let mut file = File::create("result_pic/output.dot").expect("Unable to create file");

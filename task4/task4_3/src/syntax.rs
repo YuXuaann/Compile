@@ -1,12 +1,14 @@
-use std::usize;
+use std::{fmt::Debug, usize};
 
-use crate::lexer::{Token, TokenType};
-use colored::Colorize;
+use crate::{
+    lexer::{error, read_file},
+    token::{Token, TokenType},
+};
 
-pub fn parse(tokens: Vec<Token>) -> Vec<Node> {
+pub fn parse(tokens: Vec<Token>, path: &str) -> Vec<Node> {
     let mut nodes = vec![];
     let len = tokens.len();
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(tokens, path);
     while parser.pos != len {
         nodes.push(parser.comp_unit());
     }
@@ -14,7 +16,7 @@ pub fn parse(tokens: Vec<Token>) -> Vec<Node> {
 }
 
 //Nodes
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum NodeType {
     Nil,
     //Expressions
@@ -74,6 +76,30 @@ pub enum NodeType {
     Func(BasicType, String, Vec<Node>, Box<Node>),
 }
 
+impl Debug for NodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NodeType::Nil => write!(f, "Nil"),
+            NodeType::Number(num) => write!(f, "Number({})", num),
+            NodeType::Declare(_, name, _, _, _) => write!(f, "Declare({})", name),
+            NodeType::InitList(_) => write!(f, "InitList"),
+            NodeType::Access(name, _, _) => write!(f, "Access({})", name),
+            NodeType::BinOp(op, _, _) => write!(f, "BinOp({:?})", op),
+            NodeType::Call(name, _, _) => write!(f, "Call({})", name),
+            NodeType::DeclStmt(_) => write!(f, "DeclStmt"),
+            NodeType::Assign(name, _, _, _) => write!(f, "Assign({})", name),
+            NodeType::ExprStmt(_) => write!(f, "ExprStmt"),
+            NodeType::Block(_) => write!(f, "Block"),
+            NodeType::If(_, _, _) => write!(f, "If"),
+            NodeType::While(_, _) => write!(f, "While"),
+            NodeType::Break => write!(f, "Break"),
+            NodeType::Continue => write!(f, "Continue"),
+            NodeType::Return(_) => write!(f, "Return"),
+            NodeType::Func(_, name, _, _) => write!(f, "Func({})", name),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BasicType {
     Nil,
@@ -124,30 +150,121 @@ impl Node {
         self.end = end;
         self
     }
+
+    pub fn show(&self, indent: usize) {
+        let indent_str = " ".repeat(indent);
+        println!("{}{:?}", indent_str, self.ntype);
+        match &self.ntype {
+            NodeType::Declare(_, _, Some(dims), Some(init), _) => {
+                for dim in dims {
+                    dim.show(indent + 2);
+                }
+                for val in init {
+                    val.show(indent + 2);
+                }
+            }
+            NodeType::InitList(vals) => {
+                for val in vals {
+                    val.show(indent + 2);
+                }
+            }
+            NodeType::Access(_, Some(indexes), _) => {
+                for index in indexes {
+                    index.show(indent + 2);
+                }
+            }
+            NodeType::BinOp(_, lhs, rhs) => {
+                lhs.show(indent + 2);
+                rhs.show(indent + 2);
+            }
+            NodeType::Call(_, args, _) => {
+                for arg in args {
+                    arg.show(indent + 2);
+                }
+            }
+            NodeType::DeclStmt(decls) => {
+                for decl in decls {
+                    decl.show(indent + 2);
+                }
+            }
+            NodeType::Assign(_, Some(indexes), expr, _) => {
+                for index in indexes {
+                    index.show(indent + 2);
+                }
+                expr.show(indent + 2);
+            }
+            NodeType::ExprStmt(expr) => {
+                expr.show(indent + 2);
+            }
+            NodeType::Block(stmts) => {
+                for stmt in stmts {
+                    stmt.show(indent + 2);
+                }
+            }
+            NodeType::If(cond, on_true, Some(on_false)) => {
+                cond.show(indent + 2);
+                on_true.show(indent + 2);
+                on_false.show(indent + 2);
+            }
+            NodeType::If(cond, on_true, None) => {
+                cond.show(indent + 2);
+                on_true.show(indent + 2);
+            }
+            NodeType::While(cond, body) => {
+                cond.show(indent + 2);
+                body.show(indent + 2);
+            }
+            NodeType::Return(Some(expr)) => {
+                expr.show(indent + 2);
+            }
+            NodeType::Func(_, _, args, body) => {
+                for arg in args {
+                    arg.show(indent + 2);
+                }
+                body.show(indent + 2);
+            }
+            _ => {}
+        }
+    }
 }
 
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    path: String,
+    code: Vec<char>,
 }
 
 impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, pos: 0 }
+    fn new(tokens: Vec<Token>, path: &str) -> Self {
+        Parser {
+            tokens,
+            pos: 0,
+            path: path.to_string(),
+            code: read_file(path),
+        }
     }
 
     //Tool functions
     fn expect(&mut self, ttype: TokenType) {
         let t = self.get_current_token();
-        if t.ttype != ttype {
-            t.wrong_token(format!("{:?}", ttype));
+        if t.kind != ttype {
+            error(
+                &self.path,
+                &self.code,
+                t.range.start,
+                t.line,
+                t.range.start,
+                &format!("expect {:?}", ttype),
+                "Unexpected token",
+            );
         }
         self.pos += 1;
     }
 
     fn seek(&mut self, ttype: TokenType) -> bool {
         let t = self.get_current_token();
-        if t.ttype != ttype {
+        if t.kind != ttype {
             return false;
         }
         self.pos += 1;
@@ -159,19 +276,19 @@ impl Parser {
     }
 
     fn start_count(&self) -> usize {
-        self.tokens[self.pos].start
+        self.tokens[self.pos].range.start
     }
 
     fn stop_count(&self) -> usize {
-        self.tokens[self.pos - 1].end
+        self.tokens[self.pos - 1].range.end
     }
 
     //Expressions (priority high to low)
     fn primary_expr(&mut self, is_cond: bool) -> Node {
         let t = self.get_current_token();
-        let startpos = t.start;
+        let startpos = t.range.start;
         self.pos += 1;
-        let result = match &t.ttype {
+        let result = match &t.kind {
             TokenType::LeftParen => {
                 let exp = self.const_expr(is_cond);
                 self.expect(TokenType::RightParen);
@@ -211,7 +328,15 @@ impl Parser {
                 }
             }
             _ => {
-                t.wrong_token("expression".into());
+                error(
+                    &self.path,
+                    &self.code,
+                    t.range.start,
+                    t.line,
+                    t.range.start,
+                    &format!("expect {:?}", "expression"),
+                    "Unexpected token",
+                );
                 None
             }
         };
@@ -375,7 +500,7 @@ impl Parser {
         let startpos = self.start_count();
         let t = self.get_current_token();
         self.pos += 1;
-        match t.ttype {
+        match t.kind {
             TokenType::Ident(id) => {
                 let pos = self.pos;
                 let index = self.seek_array(false);
@@ -471,7 +596,7 @@ impl Parser {
                 self.expect(TokenType::Comma);
             }
             let startpos = self.start_count();
-            match self.get_current_token().ttype {
+            match self.get_current_token().kind {
                 TokenType::LeftBrace => {
                     let n = Node::new(NodeType::InitList(self.init_val()));
                     let endpos = self.stop_count();
@@ -481,8 +606,16 @@ impl Parser {
                     init.push(self.add_expr(false));
                 }
                 _ => {
-                    self.get_current_token()
-                        .wrong_token("expression or initlist".into());
+                    let t = self.get_current_token();
+                    error(
+                        &self.path,
+                        &self.code,
+                        t.range.start,
+                        t.line,
+                        t.range.start,
+                        &format!("expect {:?}", "expression or initlist"),
+                        "Unexpected token",
+                    );
                 }
             }
         }
@@ -494,14 +627,22 @@ impl Parser {
         let startpos = self.start_count();
         let t = self.get_current_token();
         self.pos += 1;
-        let btype = match t.ttype {
+        let btype = match t.kind {
             TokenType::Const => {
                 self.expect(TokenType::Int);
                 Some(BasicType::Const)
             }
             TokenType::Int => Some(BasicType::Int),
             _ => {
-                t.wrong_token("type define".into());
+                error(
+                    &self.path,
+                    &self.code,
+                    t.range.start,
+                    t.line,
+                    t.range.start,
+                    &format!("expect {:?}", "type define"),
+                    "Unexpected token",
+                );
                 None
             }
         }
@@ -525,8 +666,16 @@ impl Parser {
                     init = Some(self.init_val());
                 }
             } else if btype == BasicType::Const {
-                self.get_current_token()
-                    .wrong_token("assign in const declaration".into());
+                let t = self.get_current_token();
+                error(
+                    &self.path,
+                    &self.code,
+                    t.range.start,
+                    t.line,
+                    t.range.start,
+                    &format!("expect {:?}", "assign in const declaration"),
+                    "Unexpected token",
+                );
                 unreachable!();
             } else {
                 init = None;
@@ -561,7 +710,7 @@ impl Parser {
     fn basic_type(&mut self) -> BasicType {
         let t = self.get_current_token();
         self.pos += 1;
-        let result = match t.ttype {
+        let result = match t.kind {
             TokenType::Void => Some(BasicType::Void),
             TokenType::Int => Some(BasicType::Int),
             TokenType::Const => {
@@ -569,7 +718,15 @@ impl Parser {
                 Some(BasicType::Const)
             }
             _ => {
-                t.wrong_token("type declaration".into());
+                error(
+                    &self.path,
+                    &self.code,
+                    t.range.start,
+                    t.line,
+                    t.range.start,
+                    &format!("expect {:?}", "type declaration"),
+                    "Unexpected token",
+                );
                 None
             }
         };
@@ -578,12 +735,20 @@ impl Parser {
 
     fn ident(&mut self) -> String {
         let name: String;
-        if let TokenType::Ident(id) = &self.get_current_token().ttype {
+        if let TokenType::Ident(id) = &self.get_current_token().kind {
             self.pos += 1;
             name = id.clone();
         } else {
-            self.get_current_token()
-                .wrong_token("function or value name".into());
+            let t = self.get_current_token();
+            error(
+                &self.path,
+                &self.code,
+                t.range.start,
+                t.line,
+                t.range.start,
+                &format!("expect {:?}", "function or value name"),
+                "Unexpected token",
+            );
             return "".to_string();
         }
         name
@@ -655,47 +820,5 @@ impl Parser {
 
         self.pos = pos;
         self.decl_stmt(Scope::Global)
-    }
-}
-
-impl Token {
-    fn wrong_token(&self, expect: String) {
-        let lstart = *self.lstart;
-        let errline: String = self.buf[*self.lstart..self.end].iter().collect();
-
-        //Error message
-        println!(
-            "{}: {}",
-            "parser error".red().bold(),
-            "Unexpected token".bold()
-        );
-        println!(
-            "  {}:{}:{}",
-            "-->".blue().bold(),
-            self.lineno,
-            self.start - lstart + 1
-        );
-        println!("   {}", "|".blue().bold());
-        println!(
-            "{:3}{} {}",
-            self.lineno.to_string().blue().bold(),
-            "|".blue().bold(),
-            errline
-        );
-
-        //Suggestion message
-        print!("   {}", "|".blue().bold());
-        for _ in 0..self.start - lstart + 1 {
-            print!("{}", ' ');
-        }
-        println!(
-            "{} {}{}",
-            "^".red().bold(),
-            "Expect ".red().bold(),
-            expect.red().bold()
-        );
-
-        println!("   {}", "|".blue().bold());
-        println!("Unexpected token");
     }
 }
